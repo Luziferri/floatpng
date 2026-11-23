@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>FloatPNG</title>
+<style>
+  :root {
+    --ground: #1b1a19;
+    --surface: #242220;
+    --raised: #2e2b28;
+    --hover: #383430;
+    --ink: #f3eee7;
+    --muted: #a69d92;
+    --faint: #918a80;
+    --accent: #ff8a5c;
+    --accent-ink: #1b1a19;
+    --danger: #ff6b6b;
+    --r: 8px;
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--ground); color: var(--ink); }
+  body { display: flex; flex-direction: column; user-select: none; }
+  button, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  header {
+    -webkit-app-region: drag;
+    padding: 16px 16px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  body.mac header { padding-top: 38px; }
+  header * { -webkit-app-region: no-drag; }
+  header .mark { -webkit-app-region: drag; flex: none; }
+  .title { flex: 1; min-width: 0; -webkit-app-region: drag; }
+  .title h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+  .title p { margin: 1px 0 0; color: var(--muted); font-size: 12.5px; }
+
+  .add {
+    border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink);
+    font-weight: 600; padding: 8px 14px; display: flex; align-items: center; gap: 6px;
+    transition: transform .12s, background .12s;
+  }
+  .add:hover { background: #ff9b73; }
+  .add:active { transform: scale(.96); }
+
+  main { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
+  main::-webkit-scrollbar { width: 10px; }
+  main::-webkit-scrollbar-thumb { background: var(--raised); border-radius: 10px; border: 3px solid var(--ground); }
+
+  .sprite {
+    display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center;
+    background: var(--surface); border-radius: var(--r); padding: 10px; margin-bottom: 6px;
+    transition: background .12s;
+  }
+  .sprite:hover { background: #292724; }
+  .sprite.is-hidden .thumb img { opacity: .35; }
+  .sprite.is-hidden .name { color: var(--muted); }
+  .thumb {
+    width: 64px; height: 64px; border-radius: 6px; background: var(--raised);
+    display: grid; place-items: center; overflow: hidden; cursor: pointer; border: 0; padding: 0;
+  }
+  .thumb img { max-width: 52px; max-height: 52px; image-rendering: pixelated; transition: transform .15s; }
+  .thumb:hover img { transform: scale(1.1); }
+  .info { min-width: 0; }
+  .name { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+  .stepper { display: inline-flex; align-items: center; background: var(--raised); border-radius: 6px; }
+  .stepper button { border: 0; background: none; width: 24px; height: 24px; border-radius: 6px; font-size: 15px; line-height: 1; color: var(--muted); }
+  .stepper button:hover { background: var(--hover); color: var(--ink); }
+  .stepper span { min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; font-size: 12px; }
+
+  .chip {
+    border: 0; border-radius: 6px; background: var(--raised); color: var(--muted);
+    height: 24px; padding: 0 8px; font-size: 12px; transition: background .12s, color .12s;
+  }
+  .chip:hover { background: var(--hover); color: var(--ink); }
+  .chip[aria-pressed="true"] { color: var(--accent); background: #3d2d25; }
+  .chip[aria-pressed="true"]::before { content: "✓ "; }
+  select.chip {
+    padding: 0 22px 0 8px; appearance: none; -webkit-appearance: none; color: var(--ink);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23a69d92'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+  }
+
+  .side { display: flex; flex-direction: column; gap: 4px; }
+  .icon {
+    border: 0; background: none; width: 28px; height: 28px; border-radius: 6px; color: var(--muted);
+    display: grid; place-items: center; transition: background .12s, color .12s;
+  }
+  .icon:hover { background: var(--raised); color: var(--ink); }
+  .icon.danger:hover { color: var(--danger); }
+  .icon svg { width: 16px; height: 16px; }
+
+  .empty {
+    margin: 4px 0 0; border-radius: var(--r); background: var(--surface);
+    min-height: 260px; padding: 28px 24px; display: grid; place-items: center; text-align: center;
+  }
+  .empty h2 { margin: 14px 0 6px; font-size: 16px; font-weight: 650; }
+  .empty p { margin: 0 auto; color: var(--muted); max-width: 260px; }
+  .empty .add { margin: 16px auto 0; }
+
+  footer { padding: 10px 16px 14px; background: var(--ground); }
+  .toggles { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  .toggles label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  .toggles input { accent-color: var(--accent); width: 14px; height: 14px; margin: 0; }
+  .hint { color: var(--faint); font-size: 12px; margin: 0; }
+  .hint b { color: var(--muted); font-weight: 500; }
+
+  .drop {
+    position: fixed; inset: 8px; border-radius: 12px; background: rgba(255,138,92,.12);
+    outline: 2px dashed var(--accent); outline-offset: -2px; display: none; place-items: center;
+    font-size: 15px; font-weight: 600; color: var(--accent); pointer-events: none;
+  }
+  body.dragging .drop { display: grid; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <svg class="mark" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+    <path d="M6 4h22a2 2 0 0 1 2 2v14L20 30H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" fill="#ff8a5c"/>
+    <path d="M30 20h-8a2 2 0 0 0-2 2v8z" fill="#ffc7ae"/>
+    <circle cx="13" cy="13" r="2.4" fill="#1b1a19"/>
+    <circle cx="21" cy="13" r="2.4" fill="#1b1a19"/>
+  </svg>
+  <div class="title">
+    <h1>FloatPNG</h1>
+    <p id="count">Nada a flutuar</p>
+  </div>
+  <button class="add" id="add" title="Adicionar PNG">
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Adicionar PNG
+  </button>
+</header>
+
+<main id="list"></main>
+
+<footer>
+  <div class="toggles">
+    <label><input type="checkbox" id="allHidden"> Esconder todos</label>
+    <label><input type="checkbox" id="login"> Abrir ao iniciar sessão</label>
+  </div>
+  <p class="hint"><b>Arrasta</b> no ecrã · <b>clique</b> faz saltar · <b>roda do rato</b> muda o tamanho · <b>botão direito</b> para mais opções</p>
+</footer>
+
+<div class="drop">Larga para pôr a flutuar</div>
+
+<template id="row">
+  <div class="sprite">
+    <button class="thumb" title="Mostrar onde está"><img alt=""></button>
+    <div class="info">
+      <div class="name"></div>
+      <div class="controls">
+        <span class="stepper">
+          <button data-act="smaller" title="Mais pequeno" aria-label="Mais pequeno">−</button>
+          <span class="scale"></span>
+          <button data-act="bigger" title="Maior" aria-label="Maior">+</button>
+        </span>
+        <select class="chip" data-act="glow" title="Brilho">
+          <option value="lilas">Brilho lilás</option>
+          <option value="branco">Brilho branco</option>
+          <option value="dourado">Brilho dourado</option>
+          <option value="ciano">Brilho ciano</option>
+          <option value="sombra">Sombra</option>
+          <option value="nenhum">Sem brilho</option>
+        </select>
+        <button class="chip" data-act="bob">Flutuar</button>
+        <button class="chip" data-act="flip">Espelhar</button>
+        <button class="chip" data-act="locked">Fixar</button>
+      </div>
+    </div>
+    <div class="side">
+      <button class="icon" data-act="hidden" title="Esconder" aria-label="Esconder"></button>
+      <button class="icon" data-act="center" title="Trazer para o centro do ecrã" aria-label="Trazer para o centro">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <button class="icon danger" data-act="remove" title="Remover" aria-label="Remover">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"/></svg>
+      </button>
+    </div>
+  </div>
+</template>
+
+<script>
+  const SCALES = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];
+  const EYE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+  const EYE_OFF = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 2l12 12M6.6 3.7A6.4 6.4 0 0 1 8 3.5c4 0 6.5 4.5 6.5 4.5a11 11 0 0 1-1.8 2.3M4.2 5A11 11 0 0 0 1.5 8S4 12.5 8 12.5c1 0 1.9-.3 2.7-.7"/></svg>';
+  const list = document.getElementById('list');
+  const tpl = document.getElementById('row');
+  let state = { sprites: [] };
+
+  const pct = (v) => `${Math.round(v * 100)}%`;
+  function stepScale(s, dir) {
+    const i = SCALES.findIndex((v) => v >= s.scale - 0.001);
+    return SCALES[Math.min(SCALES.length - 1, Math.max(0, (i < 0 ? 3 : i) + dir))];
+  }
+
+  function emptyState() {
+    list.innerHTML = `
+      <div class="empty"><div>
+        <svg width="72" height="72" viewBox="0 0 34 34" aria-hidden="true">
+          <path d="M6 4h22a2 2 0 0 1 2 2v14L20 30H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" fill="#2e2b28"/>
+          <path d="M30 20h-8a2 2 0 0 0-2 2v8z" fill="#383430"/>
+          <circle cx="13" cy="13" r="2.4" fill="#918a80"/><circle cx="21" cy="13" r="2.4" fill="#918a80"/>
+        </svg>
+        <h2>Ainda nada a flutuar</h2>
+        <p>Escolhe um PNG com fundo transparente, ou larga-o aqui. Fica por cima de todas as janelas e podes arrastá-lo para onde quiseres.</p>
+        <button class="add" id="add2">Escolher PNG</button>
+      </div></div>`;
+    document.getElementById('add2').onclick = () => window.floatpng.pick();
+  }
+
+  function render() {
+    const n = state.sprites.length;
+    const hiddenN = state.sprites.filter((s) => s.hidden).length;
+    document.getElementById('count').textContent = n === 0
+      ? 'Nada a flutuar'
+      : state.allHidden
+        ? `${n} ${n === 1 ? 'boneco' : 'bonecos'}, todos escondidos`
+        : `${n - hiddenN} a flutuar${hiddenN ? ` · ${hiddenN} ${hiddenN === 1 ? 'escondido' : 'escondidos'}` : ''}`;
+    document.getElementById('allHidden').checked = state.allHidden;
+    document.getElementById('login').checked = state.openAtLogin;
+
+    if (n === 0) return emptyState();
+    list.innerHTML = '';
+    for (const s of state.sprites) {
+      const row = tpl.content.firstElementChild.cloneNode(true);
+      row.classList.toggle('is-hidden', s.hidden);
+      const img = row.querySelector('.thumb img');
+      img.src = s.url;
+      img.style.imageRendering = s.pixel ? 'pixelated' : 'auto';
+      img.style.transform = s.flip ? 'scaleX(-1)' : '';
+      row.querySelector('.name').textContent = s.name;
+      row.querySelector('.scale').textContent = pct(s.scale);
+      row.querySelector('select').value = s.glow;
+      for (const key of ['bob', 'flip', 'locked']) {
+        row.querySelector(`[data-act="${key}"]`).setAttribute('aria-pressed', String(!!s[key]));
+      }
+      const eye = row.querySelector('[data-act="hidden"]');
+      eye.innerHTML = s.hidden ? EYE_OFF : EYE;
+      eye.title = s.hidden ? 'Mostrar' : 'Esconder';
+
+      row.querySelector('.thumb').onclick = () => window.floatpng.locate(s.id);
+      row.querySelector('select').onchange = (e) => window.floatpng.update(s.id, { glow: e.target.value });
+      row.addEventListener('click', (e) => {
+        const act = e.target.closest('button')?.dataset.act;
+        if (!act) return;
+        if (act === 'smaller' || act === 'bigger') window.floatpng.update(s.id, { scale: stepScale(s, act === 'bigger' ? 1 : -1) });
+        else if (act === 'remove') window.floatpng.remove(s.id);
+        else if (act === 'center') window.floatpng.center(s.id);
+        else window.floatpng.update(s.id, { [act]: !s[act] });
+      });
+      list.appendChild(row);
+    }
+  }
+
+  document.getElementById('add').onclick = () => window.floatpng.pick();
+  document.getElementById('allHidden').onchange = (e) => window.floatpng.setAllHidden(e.target.checked);
+  document.getElementById('login').onchange = (e) => window.floatpng.setLogin(e.target.checked);
+
+  // arrastar ficheiros para o painel
+  let depth = 0;
+  window.addEventListener('dragenter', (e) => { e.preventDefault(); depth++; document.body.classList.add('dragging'); });
+  window.addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; document.body.classList.remove('dragging'); } });
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    depth = 0;
+    document.body.classList.remove('dragging');
+    window.floatpng.addFiles(e.dataTransfer.files);
+  });
+
+  window.floatpng.onState((s) => { state = s; render(); });
+  window.floatpng.get().then((s) => {
+    state = s;
+    document.body.classList.toggle('mac', s.platform === 'darwin');
+    render();
+  });
+</script>
+</body>
+</html>

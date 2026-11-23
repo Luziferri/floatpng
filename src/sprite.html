@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>sprite</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
+  body { display: grid; place-items: center; }
+  #wrap { will-change: transform; }
+  #wrap.bob { animation: bob 2.6s ease-in-out infinite; }
+  #wrap.hop { animation: hop 0.42s cubic-bezier(.3,.7,.4,1); }
+  #wrap.ping { animation: ping 0.7s ease-out; }
+  img { display: block; -webkit-user-drag: none; pointer-events: none; transition: filter .2s, opacity .2s; }
+  img.pixel { image-rendering: pixelated; }
+  body.grab { cursor: grab; }
+  body.grabbing { cursor: grabbing; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes hop { 0% { transform: translateY(0) scale(1,1); } 30% { transform: translateY(-14px) scale(.95,1.06); } 70% { transform: translateY(0) scale(1.06,.94); } 100% { transform: none; } }
+  @keyframes ping { 0% { transform: scale(1); } 30% { transform: scale(1.18); } 60% { transform: scale(.96); } 100% { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { #wrap.bob { animation: none; } }
+</style>
+</head>
+<body>
+<div id="wrap"><img id="img" alt=""></div>
+<script>
+  const id = new URLSearchParams(location.search).get('id');
+  const wrap = document.getElementById('wrap');
+  const img = document.getElementById('img');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  let state = null;
+  let alpha = null;
+  let dragging = false;
+  let downAt = null;
+
+  const GLOW = {
+    lilas: 'drop-shadow(0 0 2px rgba(255,255,255,.95)) drop-shadow(0 0 7px rgba(186,140,255,.9)) drop-shadow(0 0 14px rgba(150,110,255,.45))',
+    branco: 'drop-shadow(0 0 2px rgba(255,255,255,1)) drop-shadow(0 0 8px rgba(255,255,255,.7))',
+    dourado: 'drop-shadow(0 0 2px rgba(255,246,200,.95)) drop-shadow(0 0 8px rgba(255,196,60,.85))',
+    ciano: 'drop-shadow(0 0 2px rgba(230,255,255,.95)) drop-shadow(0 0 8px rgba(0,214,255,.8))',
+    sombra: 'drop-shadow(2px 5px 6px rgba(0,0,0,.5))',
+    nenhum: 'none',
+  };
+
+  function apply(s) {
+    state = s;
+    const w = Math.round(s.w * s.scale);
+    const h = Math.round(s.h * s.scale);
+    img.style.width = w + 'px';
+    img.style.height = h + 'px';
+    img.style.transform = s.flip ? 'scaleX(-1)' : 'none';
+    img.style.filter = GLOW[s.glow] || 'none';
+    img.style.opacity = s.opacity;
+    img.classList.toggle('pixel', !!s.pixel);
+    if (!wrap.classList.contains('hop') && !wrap.classList.contains('ping')) {
+      wrap.classList.toggle('bob', !!s.bob);
+    }
+    document.body.classList.toggle('grab', !s.locked);
+  }
+
+  function play(name) {
+    wrap.classList.remove('bob', 'hop', 'ping');
+    void wrap.offsetWidth;
+    wrap.classList.add(name);
+    wrap.addEventListener('animationend', () => {
+      wrap.classList.remove(name);
+      if (state && state.bob) wrap.classList.add('bob');
+    }, { once: true });
+  }
+
+  // Está o rato em cima de um pixel visível do PNG?
+  function opaqueAt(cx, cy) {
+    if (!alpha || !state) return false;
+    const r = img.getBoundingClientRect();
+    let fx = (cx - r.left) / r.width;
+    const fy = (cy - r.top) / r.height;
+    if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return false;
+    if (state.flip) fx = 1 - fx;
+    const px = Math.floor(fx * canvas.width);
+    const py = Math.floor(fy * canvas.height);
+    // tolerância de alguns pixels de ecrã para facilitar apanhar sprites pequenos
+    const tol = Math.max(1, Math.round(3 / (r.width / canvas.width)));
+    for (let dy = -tol; dy <= tol; dy++) {
+      for (let dx = -tol; dx <= tol; dx++) {
+        const x = px + dx, y = py + dy;
+        if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) continue;
+        if (alpha[(y * canvas.width + x) * 4 + 3] > 16) return true;
+      }
+    }
+    return false;
+  }
+
+  let lastHit = null;
+  function setHit(v) {
+    if (v === lastHit) return;
+    lastHit = v;
+    window.sprite.hit(v);
+  }
+
+  window.addEventListener('mousemove', (e) => {
+    if (dragging) return;
+    setHit(opaqueAt(e.clientX, e.clientY));
+  });
+  window.addEventListener('mouseleave', () => { if (!dragging) setHit(false); });
+
+  window.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || !opaqueAt(e.clientX, e.clientY)) return;
+    downAt = { x: e.screenX, y: e.screenY, t: Date.now() };
+    if (state.locked) return;
+    dragging = true;
+    document.body.classList.add('grabbing');
+    window.sprite.dragStart(id);
+  });
+
+  function endDrag(e) {
+    if (dragging) {
+      dragging = false;
+      document.body.classList.remove('grabbing');
+      window.sprite.dragEnd();
+    }
+    if (downAt && e && Math.hypot(e.screenX - downAt.x, e.screenY - downAt.y) < 4 && Date.now() - downAt.t < 300) {
+      play('hop'); // um clique rápido faz o boneco saltar
+    }
+    downAt = null;
+    if (e) setHit(opaqueAt(e.clientX, e.clientY));
+  }
+  window.addEventListener('mouseup', endDrag);
+  window.addEventListener('blur', () => endDrag(null));
+
+  window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (opaqueAt(e.clientX, e.clientY)) window.sprite.menu(id);
+  });
+
+  window.addEventListener('wheel', (e) => {
+    if (!opaqueAt(e.clientX, e.clientY)) return;
+    e.preventDefault();
+    window.sprite.wheel(id, e.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
+
+  window.sprite.onState(apply);
+  window.sprite.onPing(() => play('ping'));
+
+  window.sprite.init(id).then((res) => {
+    if (!res) return;
+    img.onload = () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0);
+      alpha = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    };
+    img.src = res.dataUrl;
+    apply(res.state);
+  });
+</script>
+</body>
+</html>
