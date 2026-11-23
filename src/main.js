@@ -138,6 +138,9 @@ function openSpriteWindow(s) {
     minimizable: false,
     maximizable: false,
     show: false,
+    // no Mac, um NSPanel pode aparecer por cima de apps em ecrã inteiro
+    ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
+    acceptFirstMouse: true, // o primeiro clique já agarra o boneco, mesmo com a app inativa
     backgroundColor: '#00000000',
     title: s.name,
     webPreferences: {
@@ -147,16 +150,23 @@ function openSpriteWindow(s) {
       backgroundThrottling: false,
     },
   });
-  win.setAlwaysOnTop(true, 'screen-saver');
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  pinToAllSpaces(win);
   win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, 'sprite.html'), { query: { id: s.id } });
   win.once('ready-to-show', () => {
     if (!s.hidden && !store.allHidden) win.showInactive();
+    pinToAllSpaces(win); // o macOS só aplica isto de forma fiável depois de a janela existir no ecrã
   });
   win.on('blur', () => { if (resize && resize.id === s.id) stopResize(); });
   win.on('closed', () => windows.delete(s.id));
   windows.set(s.id, win);
+}
+
+// fica em todos os desktops e por cima de apps em ecrã inteiro
+function pinToAllSpaces(win) {
+  if (win.isDestroyed()) return;
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+  win.setAlwaysOnTop(true, 'screen-saver', 1);
 }
 
 function spriteById(id) {
@@ -192,7 +202,7 @@ function applyVisibility(s) {
   const win = windows.get(s.id);
   if (!win || win.isDestroyed()) return;
   if (s.hidden || store.allHidden) win.hide();
-  else win.showInactive();
+  else { win.showInactive(); pinToAllSpaces(win); }
 }
 
 function removeSprite(id) {
@@ -424,6 +434,7 @@ function showPanel() {
     backgroundColor: '#1b1a19',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     autoHideMenuBar: true,
+    acceptFirstMouse: true,
     webPreferences: {
       preload: path.join(__dirname, 'panel-preload.js'),
       contextIsolation: true,
