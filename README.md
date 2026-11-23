@@ -1,23 +1,110 @@
-# FloatPNG
+<p align="center">
+  <img src="build/icon.png" width="120" alt="Ícone do FloatPNG">
+</p>
 
-Deixa qualquer PNG (com fundo transparente) a flutuar por cima de todas as janelas, em Mac e Windows. Arrasta-o para onde quiseres; ele fica lá, mesmo depois de reiniciar.
+<h1 align="center">FloatPNG</h1>
 
-## Usar
+<p align="center">
+  Põe qualquer PNG a flutuar por cima de todas as janelas e arrasta-o para onde quiseres.<br>
+  Funciona em <b>Mac</b> e <b>Windows</b>.
+</p>
 
-- **Adicionar PNG** no painel, ou arrasta ficheiros para o painel.
-- **Arrastar** o boneco no ecrã para o mudar de sítio.
-- **Clique rápido**: o boneco dá um salto.
-- **Roda do rato** por cima do boneco: muda o tamanho.
-- **Botão direito** no boneco: tamanho, brilho (lilás, branco, dourado, ciano, sombra), opacidade, flutuar, espelhar, pixel art nítido, fixar posição, duplicar, esconder, remover.
-- As partes transparentes do PNG deixam passar os cliques para as janelas de baixo.
-- Fechar o painel não fecha a app; ela fica no ícone da barra de menus (Mac) ou junto ao relógio (Windows). "Sair do FloatPNG" está aí.
-- "Abrir ao iniciar sessão" no painel faz a app arrancar com o computador, já com os bonecos no sítio.
+---
 
-As imagens são copiadas para a pasta de dados da app, por isso podes apagar o original.
+## ⬇️ Descarregar
 
-## Desenvolver
+| Computador | Ficheiro |
+|---|---|
+| 🍎 Mac com chip Apple (M1, M2, M3, M4) | [**FloatPNG-1.0.0-arm64.dmg**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-1.0.0-arm64.dmg) |
+| 🍎 Mac com Intel | [**FloatPNG-1.0.0-intel.dmg**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-1.0.0-intel.dmg) |
+| 🪟 Windows (instalar) | [**FloatPNG-Setup-1.0.0.exe**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-Setup-1.0.0.exe) |
+| 🪟 Windows (sem instalar) | [**FloatPNG-1.0.0-portable.exe**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-1.0.0-portable.exe) |
 
-Corre os comandos dentro da pasta do projeto (onde está o `package.json`):
+> **Não sabes que Mac tens?** Clica no  (canto superior esquerdo) → **Acerca deste Mac**. Se em "Chip" aparecer **Apple M…**, escolhe o primeiro. Se aparecer **Intel**, escolhe o segundo.
+
+---
+
+## 🍎 Instalar no Mac
+
+1. **Descarrega** o ficheiro `.dmg` da tabela acima.
+2. **Abre** o ficheiro descarregado (faz duplo clique nele, na pasta Transferências).
+3. Na janela que aparece, **arrasta o ícone do FloatPNG para a pasta Aplicações**.
+4. Abre a pasta **Aplicações** e faz **duplo clique** no FloatPNG.
+
+### Aparece um aviso a dizer que a app não pode ser aberta?
+
+É normal: a app não está registada na Apple (custa dinheiro). Para a abrires na mesma:
+
+1. Carrega em **OK** / **Concluído** no aviso.
+2. Abre **Definições do Sistema** → **Privacidade e Segurança**.
+3. Desce até ao fim e carrega em **Abrir na mesma** ao lado de "FloatPNG".
+4. Confirma com a tua palavra-passe e carrega em **Abrir**.
+
+Só tens de fazer isto uma vez.
+
+### Diz que a app "está danificada"?
+
+Abre o **Terminal** (procura "Terminal" no Spotlight, com ⌘ + Espaço), cola esta linha e carrega em Enter:
+
+```bash
+xattr -cr /Applications/FloatPNG.app
+```
+
+Depois abre o FloatPNG outra vez.
+
+---
+
+## 🪟 Instalar no Windows
+
+### Opção A: instalar (recomendado)
+
+1. **Descarrega** o `FloatPNG-Setup-1.0.0.exe`.
+2. **Abre** o ficheiro descarregado.
+3. Se aparecer um ecrã azul a dizer *"O Windows protegeu o seu PC"*:
+   - carrega em **Mais informações**;
+   - depois em **Executar mesmo assim**.
+4. Segue o instalador (**Seguinte** → **Instalar** → **Concluir**).
+5. O FloatPNG fica no **Menu Iniciar** e no ambiente de trabalho.
+
+### Opção B: sem instalar
+
+1. **Descarrega** o `FloatPNG-1.0.0-portable.exe`.
+2. Põe-no onde quiseres (por exemplo, no ambiente de trabalho) e faz **duplo clique**.
+3. Se aparecer o ecrã azul, faz o mesmo da opção A: **Mais informações** → **Executar mesmo assim**.
+
+---
+
+## 🎮 Como usar
+
+1. Abre o FloatPNG. Aparece um pequeno painel.
+2. Carrega em **Adicionar PNG** e escolhe uma imagem. Também podes **arrastar** a imagem para o painel.
+3. A imagem aparece a flutuar no ecrã. **Arrasta-a** para onde quiseres.
+
+| Ação | O que faz |
+|---|---|
+| Arrastar o boneco | Muda o boneco de sítio |
+| Clique rápido | O boneco dá um salto |
+| Roda do rato por cima | Aumenta ou diminui o tamanho |
+| Botão direito no boneco | Mais opções: tamanho, brilho, opacidade, espelhar, fixar, duplicar, esconder, remover |
+
+**Dicas**
+
+- Usa PNGs com **fundo transparente** para o boneco ficar recortado. As partes transparentes deixam passar os cliques para o que está por baixo.
+- Os bonecos ficam no mesmo sítio quando fechas e voltas a abrir a app.
+- Fechar o painel **não fecha** a app. Ela continua num pequeno ícone:
+  - **Mac:** na barra de menus, em cima à direita;
+  - **Windows:** junto ao relógio (pode estar escondido na setinha **^**).
+- Para fechar de vez, clica nesse ícone → **Sair do FloatPNG**.
+- Liga **Abrir ao iniciar sessão** no painel para os bonecos aparecerem sempre que ligas o computador.
+
+---
+
+## 🛠️ Para programadores
+
+<details>
+<summary>Correr o código e gerar os instaladores</summary>
+
+Precisas do [Node.js](https://nodejs.org) instalado. Corre os comandos **dentro da pasta do projeto** (onde está o `package.json`):
 
 ```bash
 git clone https://github.com/Luziferri/floatpng.git
@@ -26,11 +113,11 @@ npm install
 npm start
 ```
 
-## Gerar a app
+Gerar os instaladores (ficam na pasta `dist/`):
 
 ```bash
-npm run dist:mac   # dist/FloatPNG-1.0.0-arm64.dmg (Apple Silicon) e FloatPNG-1.0.0.dmg (Intel)
-npm run dist:win   # dist/FloatPNG Setup 1.0.0.exe (instalador) e FloatPNG 1.0.0.exe (portátil)
+npm run dist:mac   # .dmg para Apple Silicon e Intel
+npm run dist:win   # instalador .exe e versão portátil
 ```
 
-As builds não estão assinadas. No Mac, na primeira vez: clique direito na app → Abrir. No Windows, o SmartScreen pode avisar: "Mais informações" → "Executar mesmo assim".
+</details>
