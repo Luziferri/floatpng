@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('floatpng', {
   update: (id, patch) => ipcRenderer.send('panel:update', id, patch),
   remove: (id) => ipcRenderer.send('panel:remove', id),
   duplicate: (id) => ipcRenderer.send('panel:duplicate', id),
+  resize: (id) => ipcRenderer.send('panel:resize', id),
   locate: (id) => ipcRenderer.send('panel:locate', id),
   center: (id) => ipcRenderer.send('panel:center', id),
   setAllHidden: (v) => ipcRenderer.send('panel:all-hidden', v),

@@ -8,5 +8,9 @@ contextBridge.exposeInMainWorld('sprite', {
   menu: (id) => ipcRenderer.send('sprite:menu', id),
   wheel: (id, dir) => ipcRenderer.send('sprite:wheel', id, dir),
   onState: (fn) => ipcRenderer.on('sprite:state', (e, s) => fn(s)),
+  resizeStart: (id, corner) => ipcRenderer.send('sprite:resize-start', id, corner),
+  resizeEnd: () => ipcRenderer.send('sprite:resize-end'),
+  resizeExit: (id) => ipcRenderer.send('sprite:resize-exit', id),
+  onResizeMode: (fn) => ipcRenderer.on('sprite:resize-mode', (e, on) => fn(on)),
   onPing: (fn) => ipcRenderer.on('sprite:ping', () => fn()),
 });

@@ -146,7 +146,7 @@
     <label><input type="checkbox" id="allHidden"> Esconder todos</label>
     <label><input type="checkbox" id="login"> Abrir ao iniciar sessão</label>
   </div>
-  <p class="hint"><b>Arrasta</b> no ecrã · <b>clique</b> faz saltar · <b>roda do rato</b> muda o tamanho · <b>botão direito</b> para mais opções</p>
+  <p class="hint"><b>Arrasta</b> no ecrã · <b>clique</b> faz saltar · <b>roda do rato</b> ou <b>Redimensionar</b> muda o tamanho · <b>botão direito</b> para mais opções</p>
 </footer>
 
 <div class="drop">Larga para pôr a flutuar</div>
@@ -170,6 +170,7 @@
           <option value="sombra">Sombra</option>
           <option value="nenhum">Sem brilho</option>
         </select>
+        <button class="chip" data-act="resize" title="Mostra pegas nos cantos do boneco para o redimensionar">Redimensionar</button>
         <button class="chip" data-act="bob">Flutuar</button>
         <button class="chip" data-act="flip">Espelhar</button>
         <button class="chip" data-act="locked">Fixar</button>
@@ -188,7 +189,7 @@
 </template>
 
 <script>
-  const SCALES = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];
+  const SCALES = [0.1, 0.15, 0.2, 0.25, 0.33, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];
   const EYE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
   const EYE_OFF = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 2l12 12M6.6 3.7A6.4 6.4 0 0 1 8 3.5c4 0 6.5 4.5 6.5 4.5a11 11 0 0 1-1.8 2.3M4.2 5A11 11 0 0 0 1.5 8S4 12.5 8 12.5c1 0 1.9-.3 2.7-.7"/></svg>';
   const list = document.getElementById('list');
@@ -197,8 +198,8 @@
 
   const pct = (v) => `${Math.round(v * 100)}%`;
   function stepScale(s, dir) {
-    const i = SCALES.findIndex((v) => v >= s.scale - 0.001);
-    return SCALES[Math.min(SCALES.length - 1, Math.max(0, (i < 0 ? 3 : i) + dir))];
+    if (dir > 0) return SCALES.find((v) => v > s.scale + 0.001) ?? SCALES[SCALES.length - 1];
+    return [...SCALES].reverse().find((v) => v < s.scale - 0.001) ?? SCALES[0];
   }
 
   function emptyState() {
@@ -254,6 +255,7 @@
         if (act === 'smaller' || act === 'bigger') window.floatpng.update(s.id, { scale: stepScale(s, act === 'bigger' ? 1 : -1) });
         else if (act === 'remove') window.floatpng.remove(s.id);
         else if (act === 'center') window.floatpng.center(s.id);
+        else if (act === 'resize') window.floatpng.resize(s.id);
         else window.floatpng.update(s.id, { [act]: !s[act] });
       });
       list.appendChild(row);

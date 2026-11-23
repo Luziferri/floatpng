@@ -15,10 +15,10 @@
 
 | Computador | Ficheiro |
 |---|---|
-| 🍎 Mac com chip Apple (M1, M2, M3, M4) | [**FloatPNG-1.0.0-arm64.dmg**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-1.0.0-arm64.dmg) |
-| 🍎 Mac com Intel | [**FloatPNG-1.0.0-intel.dmg**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-1.0.0-intel.dmg) |
-| 🪟 Windows (instalar) | [**FloatPNG-Setup-1.0.0.exe**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-Setup-1.0.0.exe) |
-| 🪟 Windows (sem instalar) | [**FloatPNG-1.0.0-portable.exe**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-1.0.0-portable.exe) |
+| 🍎 Mac com chip Apple (M1, M2, M3, M4) | [**FloatPNG-mac-arm64.dmg**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-mac-arm64.dmg) |
+| 🍎 Mac com Intel | [**FloatPNG-mac-x64.dmg**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-mac-x64.dmg) |
+| 🪟 Windows (instalar) | [**FloatPNG-Setup-windows.exe**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-Setup-windows.exe) |
+| 🪟 Windows (sem instalar) | [**FloatPNG-windows-portable.exe**](https://github.com/Luziferri/floatpng/releases/latest/download/FloatPNG-windows-portable.exe) |
 
 > **Não sabes que Mac tens?** Clica no  (canto superior esquerdo) → **Acerca deste Mac**. Se em "Chip" aparecer **Apple M…**, escolhe o primeiro. Se aparecer **Intel**, escolhe o segundo.
 
@@ -42,6 +42,10 @@
 
 Só tens de fazer isto uma vez.
 
+### Atualizar para uma versão nova
+
+Descarrega o `.dmg` novo e arrasta o FloatPNG para Aplicações outra vez (escolhe **Substituir**). Os teus bonecos e as posições ficam guardados.
+
 ### Diz que a app "está danificada"?
 
 Abre o **Terminal** (procura "Terminal" no Spotlight, com ⌘ + Espaço), cola esta linha e carrega em Enter:
@@ -58,7 +62,7 @@ Depois abre o FloatPNG outra vez.
 
 ### Opção A: instalar (recomendado)
 
-1. **Descarrega** o `FloatPNG-Setup-1.0.0.exe`.
+1. **Descarrega** o `FloatPNG-Setup-windows.exe`.
 2. **Abre** o ficheiro descarregado.
 3. Se aparecer um ecrã azul a dizer *"O Windows protegeu o seu PC"*:
    - carrega em **Mais informações**;
@@ -68,7 +72,7 @@ Depois abre o FloatPNG outra vez.
 
 ### Opção B: sem instalar
 
-1. **Descarrega** o `FloatPNG-1.0.0-portable.exe`.
+1. **Descarrega** o `FloatPNG-windows-portable.exe`.
 2. Põe-no onde quiseres (por exemplo, no ambiente de trabalho) e faz **duplo clique**.
 3. Se aparecer o ecrã azul, faz o mesmo da opção A: **Mais informações** → **Executar mesmo assim**.
 
@@ -84,8 +88,9 @@ Depois abre o FloatPNG outra vez.
 |---|---|
 | Arrastar o boneco | Muda o boneco de sítio |
 | Clique rápido | O boneco dá um salto |
-| Roda do rato por cima | Aumenta ou diminui o tamanho |
-| Botão direito no boneco | Mais opções: tamanho, brilho, opacidade, espelhar, fixar, duplicar, esconder, remover |
+| Roda do rato por cima | Aumenta ou diminui o tamanho aos saltos (de 10% a 800%) |
+| Botão direito → **Redimensionar…** (ou o botão no painel) | Aparecem pegas nos cantos, como no Word. Arrasta uma pega para o tamanho exato que quiseres. Clica fora, carrega em Enter ou Esc para terminar |
+| Botão direito no boneco | Mais opções: redimensionar, tamanho, brilho, opacidade, espelhar, fixar, duplicar, esconder, remover |
 
 **Dicas**
 

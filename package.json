@@ -1,7 +1,7 @@
 {
   "name": "floatpng",
   "productName": "FloatPNG",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Deixa PNGs a flutuar em qualquer sítio do ecrã e arrasta-os à vontade.",
   "main": "src/main.js",
   "scripts": {
@@ -13,18 +13,47 @@
   "build": {
     "appId": "com.ricardojanz.floatpng",
     "productName": "FloatPNG",
-    "files": ["src/**/*", "package.json"],
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
     "mac": {
       "category": "public.app-category.utilities",
-      "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }]
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "FloatPNG-mac-${arch}.${ext}"
     },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "FloatPNG-Setup-windows.${ext}"
+    },
+    "portable": {
+      "artifactName": "FloatPNG-windows-portable.${ext}"
     }
   },
   "devDependencies": {

@@ -5,16 +5,38 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
 <title>sprite</title>
 <style>
+  :root { --pad: 28px; }
   html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
   body { display: grid; place-items: center; }
   #wrap { will-change: transform; }
   #wrap.bob { animation: bob 2.6s ease-in-out infinite; }
   #wrap.hop { animation: hop 0.42s cubic-bezier(.3,.7,.4,1); }
   #wrap.ping { animation: ping 0.7s ease-out; }
-  img { display: block; -webkit-user-drag: none; pointer-events: none; transition: filter .2s, opacity .2s; }
+  /* a imagem enche a janela (menos a margem), por isso acompanha qualquer redimensionamento */
+  img {
+    display: block; -webkit-user-drag: none; pointer-events: none; transition: filter .2s, opacity .2s;
+    width: calc(100vw - var(--pad) * 2); height: calc(100vh - var(--pad) * 2);
+  }
   img.pixel { image-rendering: pixelated; }
   body.grab { cursor: grab; }
   body.grabbing { cursor: grabbing; }
+
+  /* modo redimensionar */
+  #box { display: none; position: fixed; inset: var(--pad); pointer-events: none;
+    outline: 1px dashed rgba(255,255,255,.95); box-shadow: 0 0 0 1px rgba(0,0,0,.55); }
+  body.editing #box { display: block; }
+  .handle { position: absolute; width: 10px; height: 10px; background: #fff; border: 1px solid #2b2b2b;
+    border-radius: 2px; pointer-events: auto; box-sizing: border-box; }
+  .handle:hover { background: #ff8a5c; }
+  .nw { left: -6px; top: -6px; cursor: nwse-resize; }
+  .se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+  .ne { right: -6px; top: -6px; cursor: nesw-resize; }
+  .sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+  #size { position: fixed; left: 50%; bottom: 3px; transform: translateX(-50%); display: none;
+    font: 600 11px/1 -apple-system, "Segoe UI", system-ui, sans-serif; color: #fff; background: rgba(27,26,25,.88);
+    padding: 4px 7px; border-radius: 5px; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
+  body.editing #size { display: block; }
+
   @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
   @keyframes hop { 0% { transform: translateY(0) scale(1,1); } 30% { transform: translateY(-14px) scale(.95,1.06); } 70% { transform: translateY(0) scale(1.06,.94); } 100% { transform: none; } }
   @keyframes ping { 0% { transform: scale(1); } 30% { transform: scale(1.18); } 60% { transform: scale(.96); } 100% { transform: scale(1); } }
@@ -23,15 +45,25 @@
 </head>
 <body>
 <div id="wrap"><img id="img" alt=""></div>
+<div id="box">
+  <div class="handle nw" data-corner="nw"></div>
+  <div class="handle ne" data-corner="ne"></div>
+  <div class="handle sw" data-corner="sw"></div>
+  <div class="handle se" data-corner="se"></div>
+</div>
+<div id="size"></div>
 <script>
   const id = new URLSearchParams(location.search).get('id');
   const wrap = document.getElementById('wrap');
   const img = document.getElementById('img');
+  const sizeLabel = document.getElementById('size');
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   let state = null;
   let alpha = null;
   let dragging = false;
+  let resizing = false;
+  let editing = false;
   let downAt = null;
 
   const GLOW = {
@@ -43,20 +75,23 @@
     nenhum: 'none',
   };
 
+  function updateBob() {
+    const busy = wrap.classList.contains('hop') || wrap.classList.contains('ping');
+    wrap.classList.toggle('bob', !!(state && state.bob) && !editing && !busy);
+  }
+
   function apply(s) {
     state = s;
-    const w = Math.round(s.w * s.scale);
-    const h = Math.round(s.h * s.scale);
-    img.style.width = w + 'px';
-    img.style.height = h + 'px';
+    document.documentElement.style.setProperty('--pad', s.pad + 'px');
     img.style.transform = s.flip ? 'scaleX(-1)' : 'none';
     img.style.filter = GLOW[s.glow] || 'none';
     img.style.opacity = s.opacity;
     img.classList.toggle('pixel', !!s.pixel);
-    if (!wrap.classList.contains('hop') && !wrap.classList.contains('ping')) {
-      wrap.classList.toggle('bob', !!s.bob);
-    }
     document.body.classList.toggle('grab', !s.locked);
+    const pct = `${Math.round(s.scale * 100)}%`;
+    const w = Math.round(s.w * s.scale) + s.pad * 2;
+    sizeLabel.textContent = w < 150 ? pct : `${Math.round(s.w * s.scale)} × ${Math.round(s.h * s.scale)} px · ${pct}`;
+    updateBob();
   }
 
   function play(name) {
@@ -65,7 +100,7 @@
     wrap.classList.add(name);
     wrap.addEventListener('animationend', () => {
       wrap.classList.remove(name);
-      if (state && state.bob) wrap.classList.add('bob');
+      updateBob();
     }, { once: true });
   }
 
@@ -91,6 +126,12 @@
     return false;
   }
 
+  // em modo redimensionar, toda a caixa da imagem conta como "dentro"
+  function insideBox(cx, cy) {
+    const r = img.getBoundingClientRect();
+    return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
+  }
+
   let lastHit = null;
   function setHit(v) {
     if (v === lastHit) return;
@@ -98,14 +139,52 @@
     window.sprite.hit(v);
   }
 
+  function setEditing(on) {
+    if (editing === on) return;
+    editing = on;
+    document.body.classList.toggle('editing', on);
+    updateBob();
+    if (!on) {
+      lastHit = null;
+      window.sprite.resizeExit(id);
+    }
+  }
+
   window.addEventListener('mousemove', (e) => {
-    if (dragging) return;
+    if (dragging || resizing || editing) return;
     setHit(opaqueAt(e.clientX, e.clientY));
   });
-  window.addEventListener('mouseleave', () => { if (!dragging) setHit(false); });
+  window.addEventListener('mouseleave', () => { if (!dragging && !editing) setHit(false); });
+
+  // o ponteiro fica "preso" à pega, para o largar do rato chegar sempre cá
+  // (a janela muda de tamanho debaixo do cursor e o sistema podia perdê-lo)
+  function finishResize() {
+    if (!resizing) return;
+    resizing = false;
+    window.sprite.resizeEnd();
+  }
+  document.querySelectorAll('.handle').forEach((h) => {
+    h.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      h.setPointerCapture(e.pointerId);
+      resizing = true;
+      window.sprite.resizeStart(id, h.dataset.corner);
+    });
+    h.addEventListener('pointerup', finishResize);
+    h.addEventListener('pointercancel', finishResize);
+    h.addEventListener('lostpointercapture', finishResize);
+    h.addEventListener('mousedown', (e) => e.stopPropagation());
+  });
 
   window.addEventListener('mousedown', (e) => {
-    if (e.button !== 0 || !opaqueAt(e.clientX, e.clientY)) return;
+    if (e.button !== 0 || resizing) return;
+    const onSprite = editing ? insideBox(e.clientX, e.clientY) : opaqueAt(e.clientX, e.clientY);
+    if (!onSprite) {
+      if (editing) setEditing(false); // clicar fora da caixa termina
+      return;
+    }
     downAt = { x: e.screenX, y: e.screenY, t: Date.now() };
     if (state.locked) return;
     dragging = true;
@@ -113,34 +192,46 @@
     window.sprite.dragStart(id);
   });
 
-  function endDrag(e) {
+  function endPointer(e) {
+    if (resizing) {
+      finishResize();
+      return;
+    }
     if (dragging) {
       dragging = false;
       document.body.classList.remove('grabbing');
       window.sprite.dragEnd();
     }
-    if (downAt && e && Math.hypot(e.screenX - downAt.x, e.screenY - downAt.y) < 4 && Date.now() - downAt.t < 300) {
+    if (!editing && downAt && e && Math.hypot(e.screenX - downAt.x, e.screenY - downAt.y) < 4 && Date.now() - downAt.t < 300) {
       play('hop'); // um clique rápido faz o boneco saltar
     }
     downAt = null;
-    if (e) setHit(opaqueAt(e.clientX, e.clientY));
+    if (e && !editing) setHit(opaqueAt(e.clientX, e.clientY));
   }
-  window.addEventListener('mouseup', endDrag);
-  window.addEventListener('blur', () => endDrag(null));
+  window.addEventListener('mouseup', endPointer);
+  window.addEventListener('blur', () => {
+    endPointer(null);
+    setEditing(false); // clicar noutra janela termina o modo redimensionar
+  });
+  window.addEventListener('keydown', (e) => {
+    if (editing && (e.key === 'Escape' || e.key === 'Enter')) setEditing(false);
+  });
+  window.addEventListener('dblclick', () => { if (editing) setEditing(false); });
 
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    if (opaqueAt(e.clientX, e.clientY)) window.sprite.menu(id);
+    if (editing || opaqueAt(e.clientX, e.clientY)) window.sprite.menu(id);
   });
 
   window.addEventListener('wheel', (e) => {
-    if (!opaqueAt(e.clientX, e.clientY)) return;
+    if (!(editing ? insideBox(e.clientX, e.clientY) : opaqueAt(e.clientX, e.clientY))) return;
     e.preventDefault();
     window.sprite.wheel(id, e.deltaY < 0 ? 1 : -1);
   }, { passive: false });
 
   window.sprite.onState(apply);
   window.sprite.onPing(() => play('ping'));
+  window.sprite.onResizeMode((on) => setEditing(on));
 
   window.sprite.init(id).then((res) => {
     if (!res) return;

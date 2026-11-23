@@ -9,7 +9,13 @@ const { pathToFileURL } = require('url');
 if (process.env.FLOATPNG_USER_DATA) app.setPath('userData', process.env.FLOATPNG_USER_DATA);
 
 const PAD = 28; // espaço transparente à volta do PNG para o brilho e a animação
-const SCALES = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];
+const SCALES = [0.1, 0.15, 0.2, 0.25, 0.33, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];
+function stepScale(scale, dir) {
+  if (dir > 0) return SCALES.find((v) => v > scale + 0.001) ?? SCALES[SCALES.length - 1];
+  return [...SCALES].reverse().find((v) => v < scale - 0.001) ?? SCALES[0];
+}
+const MAX_SCALE = 20;
+
 const GLOWS = {
   lilas: 'Lilás',
   branco: 'Branco',
@@ -28,6 +34,7 @@ let panel = null;
 let tray = null;
 const windows = new Map(); // id -> BrowserWindow
 let drag = null; // { id, offX, offY, timer }
+let resize = null; // { id, corner, ax, ay, timer }
 
 /* ---------- persistência ---------- */
 
@@ -147,6 +154,7 @@ function openSpriteWindow(s) {
   win.once('ready-to-show', () => {
     if (!s.hidden && !store.allHidden) win.showInactive();
   });
+  win.on('blur', () => { if (resize && resize.id === s.id) stopResize(); });
   win.on('closed', () => windows.delete(s.id));
   windows.set(s.id, win);
 }
@@ -240,6 +248,63 @@ function startDrag(id) {
   }, 8);
 }
 
+/* ---------- redimensionar com pegas (como no Word) ---------- */
+
+function enterResizeMode(id) {
+  const s = spriteById(id);
+  const win = windows.get(id);
+  if (!s || !win) return;
+  if (s.hidden || store.allHidden) {
+    store.allHidden = false;
+    s.hidden = false;
+    store.sprites.forEach(applyVisibility);
+  }
+  win.setIgnoreMouseEvents(false);
+  if (process.platform === 'darwin') app.focus({ steal: true });
+  win.focus();
+  win.webContents.send('sprite:resize-mode', true);
+}
+
+function startResize(id, corner) {
+  const s = spriteById(id);
+  const win = windows.get(id);
+  if (!s || !win) return;
+  stopResize();
+  const [wx, wy] = win.getPosition();
+  const L = wx + PAD;
+  const T = wy + PAD;
+  const R = L + Math.round(s.w * s.scale);
+  const B = T + Math.round(s.h * s.scale);
+  const east = corner.includes('e');
+  const south = corner.includes('s');
+  // o canto oposto fica parado, como no Word
+  resize = { id, corner, ax: east ? L : R, ay: south ? T : B };
+  const minScale = Math.max(0.02, 6 / Math.max(s.w, s.h));
+  resize.timer = setInterval(() => {
+    if (win.isDestroyed()) return stopResize();
+    const c = screen.getCursorScreenPoint();
+    const dx = east ? c.x - resize.ax : resize.ax - c.x;
+    const dy = south ? c.y - resize.ay : resize.ay - c.y;
+    const scale = Math.min(MAX_SCALE, Math.max(minScale, Math.max(dx / s.w, dy / s.h)));
+    if (Math.abs(scale - s.scale) < 0.0005) return;
+    s.scale = Math.round(scale * 1000) / 1000;
+    const nw = Math.max(1, Math.round(s.w * s.scale));
+    const nh = Math.max(1, Math.round(s.h * s.scale));
+    s.x = (east ? resize.ax : resize.ax - nw) - PAD;
+    s.y = (south ? resize.ay : resize.ay - nh) - PAD;
+    win.setBounds({ x: s.x, y: s.y, width: nw + PAD * 2, height: nh + PAD * 2 });
+    win.webContents.send('sprite:state', spriteState(s));
+  }, 8);
+}
+
+function stopResize() {
+  if (!resize) return;
+  clearInterval(resize.timer);
+  resize = null;
+  save();
+  broadcast();
+}
+
 function stopDrag() {
   if (!drag) return;
   clearInterval(drag.timer);
@@ -252,11 +317,7 @@ function stopDrag() {
 /* ---------- menus ---------- */
 
 function spriteMenu(s) {
-  const step = (dir) => {
-    const i = SCALES.findIndex((v) => v >= s.scale - 0.001);
-    const next = SCALES[Math.min(SCALES.length - 1, Math.max(0, (i < 0 ? 3 : i) + dir))];
-    updateSprite(s.id, { scale: next });
-  };
+  const step = (dir) => updateSprite(s.id, { scale: stepScale(s.scale, dir) });
   return Menu.buildFromTemplate([
     { label: s.name, enabled: false },
     { type: 'separator' },
@@ -291,6 +352,7 @@ function spriteMenu(s) {
     { label: 'Flutuar (animação)', type: 'checkbox', checked: s.bob, click: () => updateSprite(s.id, { bob: !s.bob }) },
     { label: 'Espelhar', type: 'checkbox', checked: s.flip, click: () => updateSprite(s.id, { flip: !s.flip }) },
     { label: 'Pixel art nítido', type: 'checkbox', checked: s.pixel, click: () => updateSprite(s.id, { pixel: !s.pixel }) },
+    { label: 'Redimensionar…', click: () => enterResizeMode(s.id) },
     { label: 'Fixar posição', type: 'checkbox', checked: s.locked, click: () => updateSprite(s.id, { locked: !s.locked }) },
     { type: 'separator' },
     { label: 'Duplicar', click: () => duplicateSprite(s.id) },
@@ -401,11 +463,19 @@ ipcMain.handle('sprite:init', (e, id) => {
 });
 ipcMain.on('sprite:hit', (e, opaque) => {
   const win = BrowserWindow.fromWebContents(e.sender);
-  if (!win || drag) return;
+  if (!win || drag || resize) return;
   win.setIgnoreMouseEvents(!opaque, { forward: true });
 });
 ipcMain.on('sprite:drag-start', (e, id) => startDrag(id));
 ipcMain.on('sprite:drag-end', () => stopDrag());
+ipcMain.on('sprite:resize-start', (e, id, corner) => startResize(id, corner));
+ipcMain.on('sprite:resize-end', () => stopResize());
+ipcMain.on('sprite:resize-exit', (e, id) => {
+  stopResize();
+  const win = windows.get(id);
+  if (win && !win.isDestroyed()) win.setIgnoreMouseEvents(true, { forward: true });
+});
+ipcMain.on('panel:resize', (e, id) => enterResizeMode(id));
 ipcMain.on('sprite:menu', (e, id) => {
   const s = spriteById(id);
   const win = windows.get(id);
@@ -414,8 +484,7 @@ ipcMain.on('sprite:menu', (e, id) => {
 ipcMain.on('sprite:wheel', (e, id, dir) => {
   const s = spriteById(id);
   if (!s || s.locked) return;
-  const i = SCALES.findIndex((v) => v >= s.scale - 0.001);
-  const next = SCALES[Math.min(SCALES.length - 1, Math.max(0, (i < 0 ? 3 : i) + dir))];
+  const next = stepScale(s.scale, dir);
   if (next !== s.scale) updateSprite(id, { scale: next });
 });
 
