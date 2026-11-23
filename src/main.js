@@ -72,6 +72,14 @@ function windowSize(s) {
   };
 }
 
+// Põe a janela no sítio com o tamanho certo. No Windows com escala (125%, 150%…),
+// setPosition arredonda o tamanho e a janela cresce um pouco a cada chamada;
+// dar sempre a largura e a altura exatas evita isso.
+function placeWindow(win, s) {
+  if (!win || win.isDestroyed()) return;
+  win.setBounds({ x: Math.round(s.x), y: Math.round(s.y), ...windowSize(s) });
+}
+
 function clampToScreen(s) {
   const { width, height } = windowSize(s);
   const displays = screen.getAllDisplays();
@@ -235,7 +243,7 @@ function duplicateSprite(id) {
   });
   const win = windows.get(copy.id);
   copy.x = s.x + 40; copy.y = s.y + 20;
-  if (win) win.setPosition(copy.x, copy.y);
+  placeWindow(win, copy);
   save();
 }
 
@@ -252,9 +260,12 @@ function startDrag(id) {
   drag.timer = setInterval(() => {
     if (win.isDestroyed()) return stopDrag();
     const p = screen.getCursorScreenPoint();
-    s.x = p.x - drag.offX;
-    s.y = p.y - drag.offY;
-    win.setPosition(Math.round(s.x), Math.round(s.y));
+    const nx = p.x - drag.offX;
+    const ny = p.y - drag.offY;
+    if (nx === s.x && ny === s.y) return;
+    s.x = nx;
+    s.y = ny;
+    placeWindow(win, s);
   }, 8);
 }
 
@@ -535,7 +546,7 @@ ipcMain.on('panel:center', (e, id) => {
   const { width, height } = windowSize(s);
   s.x = Math.round(a.x + a.width / 2 - width / 2);
   s.y = Math.round(a.y + a.height / 2 - height / 2);
-  win.setPosition(s.x, s.y);
+  placeWindow(win, s);
   updateSprite(id, { hidden: false });
   win.webContents.send('sprite:ping');
 });
@@ -580,7 +591,7 @@ app.whenReady().then(() => {
     store.sprites.forEach((s) => {
       clampToScreen(s);
       const win = windows.get(s.id);
-      if (win) win.setPosition(s.x, s.y);
+      placeWindow(win, s);
     });
     save();
   });
