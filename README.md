@@ -17,7 +17,11 @@ As imagens são copiadas para a pasta de dados da app, por isso podes apagar o o
 
 ## Desenvolver
 
+Corre os comandos dentro da pasta do projeto (onde está o `package.json`):
+
 ```bash
+git clone https://github.com/Luziferri/floatpng.git
+cd floatpng
 npm install
 npm start
 ```
