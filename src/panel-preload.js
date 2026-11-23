@@ -4,10 +4,12 @@ contextBridge.exposeInMainWorld('floatpng', {
   get: () => ipcRenderer.invoke('panel:get'),
   onState: (fn) => ipcRenderer.on('panel:state', (e, s) => fn(s)),
   pick: () => ipcRenderer.send('panel:pick'),
-  addFiles: (files) => ipcRenderer.send(
-    'panel:add-paths',
-    Array.from(files).map((f) => webUtils.getPathForFile(f)).filter(Boolean),
-  ),
+  // recebe um File de cada vez: uma FileList inteira não atravessa a contextBridge
+  pathForFile: (file) => {
+    try { return webUtils.getPathForFile(file) || ''; } catch { return ''; }
+  },
+  addPath: (p) => ipcRenderer.send('panel:add-paths', [p]),
+  addData: (name, bytes) => ipcRenderer.send('panel:add-data', name, bytes),
   update: (id, patch) => ipcRenderer.send('panel:update', id, patch),
   remove: (id) => ipcRenderer.send('panel:remove', id),
   duplicate: (id) => ipcRenderer.send('panel:duplicate', id),

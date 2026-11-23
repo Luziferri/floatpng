@@ -81,7 +81,7 @@ Depois abre o FloatPNG outra vez.
 ## 🎮 Como usar
 
 1. Abre o FloatPNG. Aparece um pequeno painel.
-2. Carrega em **Adicionar PNG** e escolhe uma imagem. Também podes **arrastar** a imagem para o painel.
+2. Carrega em **Adicionar PNG** e escolhe uma imagem. Também podes **arrastar** a imagem para o painel (ou, no Mac, para o ícone do FloatPNG no Dock).
 3. A imagem aparece a flutuar no ecrã. **Arrasta-a** para onde quiseres.
 
 | Ação | O que faz |

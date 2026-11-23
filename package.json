@@ -1,7 +1,7 @@
 {
   "name": "floatpng",
   "productName": "FloatPNG",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Deixa PNGs a flutuar em qualquer sítio do ecrã e arrasta-os à vontade.",
   "main": "src/main.js",
   "scripts": {
@@ -28,7 +28,23 @@
           ]
         }
       ],
-      "artifactName": "FloatPNG-mac-${arch}.${ext}"
+      "artifactName": "FloatPNG-mac-${arch}.${ext}",
+      "extendInfo": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Imagem",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": [
+              "public.png",
+              "public.jpeg",
+              "com.compuserve.gif",
+              "org.webmproject.webp",
+              "public.image"
+            ]
+          }
+        ]
+      }
     },
     "win": {
       "target": [

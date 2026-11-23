@@ -491,6 +491,16 @@ ipcMain.on('sprite:wheel', (e, id, dir) => {
 ipcMain.handle('panel:get', () => panelState());
 ipcMain.on('panel:pick', pickFiles);
 ipcMain.on('panel:add-paths', (e, paths) => paths.forEach((p) => addSprite(p)));
+ipcMain.on('panel:add-data', (e, name, bytes) => {
+  const safe = path.basename(String(name || 'imagem.png')).replace(/[^\w.\- ]/g, '_') || 'imagem.png';
+  const withExt = /\.(png|gif|webp|jpe?g)$/i.test(safe) ? safe : `${safe}.png`;
+  const dir = path.join(app.getPath('temp'), 'floatpng-drop');
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = path.join(dir, withExt);
+  fs.writeFileSync(tmp, Buffer.from(bytes));
+  addSprite(tmp);
+  fs.rm(tmp, { force: true }, () => {});
+});
 ipcMain.on('panel:update', (e, id, patch) => updateSprite(id, patch));
 ipcMain.on('panel:remove', (e, id) => removeSprite(id));
 ipcMain.on('panel:duplicate', (e, id) => duplicateSprite(id));

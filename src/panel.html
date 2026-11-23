@@ -117,6 +117,10 @@
     font-size: 15px; font-weight: 600; color: var(--accent); pointer-events: none;
   }
   body.dragging .drop { display: grid; }
+  .toast { position: fixed; left: 50%; bottom: 84px; transform: translate(-50%, 8px); opacity: 0;
+    background: var(--raised); color: var(--ink); padding: 8px 12px; border-radius: 8px; font-size: 12.5px;
+    pointer-events: none; transition: opacity .18s, transform .18s; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -266,6 +270,38 @@
   document.getElementById('allHidden').onchange = (e) => window.floatpng.setAllHidden(e.target.checked);
   document.getElementById('login').onchange = (e) => window.floatpng.setLogin(e.target.checked);
 
+  const IMAGE_RE = /\.(png|gif|webp|jpe?g)$/i;
+  async function addDropped(dt) {
+    const files = Array.from(dt.files || []);
+    let added = 0;
+    for (const f of files) {
+      const isImage = IMAGE_RE.test(f.name) || /^image\/(png|gif|webp|jpeg)$/.test(f.type);
+      if (!isImage) continue;
+      const p = window.floatpng.pathForFile(f);
+      if (p && IMAGE_RE.test(p)) {
+        window.floatpng.addPath(p);
+      } else {
+        // sem caminho no disco (ex.: imagem arrastada de um browser): envia o conteúdo
+        const bytes = new Uint8Array(await f.arrayBuffer());
+        window.floatpng.addData(f.name || 'imagem.png', bytes);
+      }
+      added++;
+    }
+    if (!added) flash(files.length ? 'Só dá para PNG, GIF, WebP ou JPG' : 'Não encontrei nenhuma imagem');
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.setAttribute('role', 'status');
+  document.body.appendChild(toast);
+  let toastTimer;
+  function flash(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
   // arrastar ficheiros para o painel
   let depth = 0;
   window.addEventListener('dragenter', (e) => { e.preventDefault(); depth++; document.body.classList.add('dragging'); });
@@ -275,7 +311,7 @@
     e.preventDefault();
     depth = 0;
     document.body.classList.remove('dragging');
-    window.floatpng.addFiles(e.dataTransfer.files);
+    addDropped(e.dataTransfer);
   });
 
   window.floatpng.onState((s) => { state = s; render(); });
